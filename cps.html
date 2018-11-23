@@ -1,0 +1,77 @@
+<html>
+
+<head>
+<title>SOMME CPS</title>
+<script type="text/javascript">
+
+// exemple de simulation d'opérations bloquantes utilisant les
+// continuations (spécifiquement le "Continuation Passing Style")
+
+function set(id, content) {
+  document.getElementById(id).innerHTML = content;
+}
+
+function ignorer(c) {
+  alert("touche ignoree: "+c);
+}
+
+var keypress = ignorer;
+
+function lire_ligne(id, cont) {
+
+  // Cette fonction fait la lecture d'une ligne du clavier.
+  // id identifie le "span" dans lequel sera lu la ligne.
+  // cont est la continuation qui recevra la chaine qui
+  // est la ligne lue.
+
+  function lire(ligne) {
+
+    set(id, ligne+"_");           // afficher le curseur
+
+    keypress = function (c) {
+
+      if (c == "\r") {            // touche "return"
+
+        set(id, ligne);           // effacer le curseur
+        keypress = ignorer;
+        cont(ligne);
+
+      } else if (c == "\b") {     // touche "backspace"
+
+        lire(ligne.slice(0, -1)); // effacer le dernier caractere
+
+      } else {                    // autre touche
+
+        lire(ligne + c);          // ajouter le caractere a la fin
+
+      }
+    };
+  }
+
+  lire("");                       // commencer avec ligne vide
+}
+
+function main() {
+  lire_ligne("X",
+             function (x) {
+               lire_ligne("Y",
+                          function (y) {
+                            set("SOMME", (+x)+(+y));
+                          });
+             });
+}
+</script>
+</head>
+
+<body onload="main()"
+      onkeypress="keypress(String.fromCharCode(event.charCode))">
+
+   <h3>X: <span id="X"></span></h3>
+
+   <h3>Y: <span id="Y"></span></h3>
+
+   <h3>SOMME: <span id="SOMME"></span></h3>
+
+</body>
+
+</html>
