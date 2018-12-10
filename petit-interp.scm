@@ -1,6 +1,14 @@
 #! /usr/bin/env gsi -:dar
 
+
+
+;;; Deep Web Diaries
+
 ;;; Fichier : petit-interp.scm
+;;; Auteurs: Daniel El-Masri (20096261) et Philippe Marsan-Loyer (1054077)
+;;;          avec contribution de Marc Feeley
+;;; Version: 2.0
+;;; Parseur et interprete de C ecris en Scheme 
 
 ;;; Ce programme est une version incomplete du TP2.  Vous devez uniquement
 ;;; changer et ajouter du code dans la premiere section.
@@ -47,13 +55,24 @@
            (next-sym ($ inp) cont)) ;; sauter les blancs
           (else
            (let ((c (@ inp)))
-             (cond ((chiffre? c)   (symbol-int inp cont))
-                   ((lettre? c)    (symbol-id inp cont))
-                   ((char=? c #\() (cont ($ inp) 'LPAR))
-                   ((char=? c #\)) (cont ($ inp) 'RPAR))
-                   ((char=? c #\;) (cont ($ inp) 'SEMI))
-                   (else
-                    (syntax-error))))))))
+            (cond ((chiffre? c)   (symbol-int inp cont))
+                 ((lettre? c)    (symbol-id inp cont))
+                 ((char=? c #\{) (cont ($ inp) 'LBRA))
+                 ((char=? c #\}) (cont ($ inp) 'RBRA))
+                 ((char=? c #\() (cont ($ inp) 'LPAR))
+                 ((char=? c #\)) (cont ($ inp) 'RPAR))
+                 ((char=? c #\;) (cont ($ inp) 'SEMI))
+                 ((char=? c #\*) (cont ($ inp) 'STAR))
+                 ((char=? c #\/) (cont ($ inp) 'SLASH))
+                 ((char=? c #\%) (cont ($ inp) 'PERC))
+                 ((char=? c #\+) (cont ($ inp) 'PLUS))
+                 ((char=? c #\-) (cont ($ inp) 'MINUS))
+                 ((char=? c #\<) (cont ($ inp) 'LESS))
+                 ((char=? c #\>) (cont ($ inp) 'GREAT))
+                 ((char=? c #\!) (cont ($ inp) 'NOT))
+                 ((char=? c #\=) (cont ($ inp) 'EQ))
+                 (else
+                  (syntax-error))))))))
 
 ;; La fonction @ prend une liste de caractere possiblement vide et
 ;; retourne le premier caractere, ou le caractere #\nul si la liste
@@ -137,10 +156,19 @@
     (if (lettre? (@ inp))
         (symbol-id-aux ($ inp) cont (cons (@ inp) lst))
         (let ((id (list->string (reverse lst))))
-          (cond ((string=? id "print")
-                 (cont inp 'PRINT-SYM))
-                (else
-                 (cont inp id)))))))
+          (cond
+           ((string=? id "print")
+              (cont inp 'PRINT-SYM))
+           ((string=? id "while")
+              (cont inp 'WHILE-SYM))
+           ((string=? id "do")
+              (cont inp 'DO-SYM))
+           ((string=? id "if")
+              (cont inp 'IF-SYM))
+           ((string=? id "else")
+              (cont inp 'ELSE-SYM))
+            (else
+              (cont inp id)))))))
 
 ;; La fonction expect recoit trois parametres, un symbole, une liste
 ;; de caracteres et une continuation.  La liste de caracteres sera
@@ -196,6 +224,10 @@
                 (case sym ;; determiner quel genre de <stat>
                   ((PRINT-SYM)
                    (<print_stat> inp2 cont))
+                  ((IF-SYM)
+                   (<if_stat> inp2 cont))
+                  ((WHILE-SYM)
+                   (<while_stat> inp2 cont))
                   (else
                    (<expr_stat> inp cont)))))))
 
@@ -208,6 +240,31 @@
                             (lambda (inp)
                               (cont inp
                                     (list 'PRINT expr))))))))
+
+(define <while_stat>
+  (lambda (inp cont)
+    (<paren_expr> inp ;; analyser une <paren_expr>
+      (lambda (inp2 expr)
+        (<stat> inp2 ;; analyser le <stat> a l'interieur du while
+          (lambda (inp3 expr2)
+            (cont inp3
+              (list 'WHILE expr2))))))))
+
+(define <if_stat>
+  (lambda (inp cont)
+    (<paren_expr> inp
+      (lambda (inp2 expr)
+        (<stat> inp2
+          (lambda (inp3 expr2)
+            (next-sym inp3
+              (lambda (inp4 sym)
+                (if (equal? sym 'ELSE-SYM) 
+                  (<stat> inp4
+                    (lambda (inp5 expr3)
+                      (cont inp5
+                        (list 'IF expr3)))) 
+                  (cont inp
+                    (list 'IF expr2)))))))))))
 
 (define <paren_expr>
   (lambda (inp cont)
@@ -250,15 +307,111 @@
 
 (define <test>
   (lambda (inp cont)
-    (<sum> inp cont)))
+    (<sum> inp
+      (lambda (inp2 expr)
+        (next-sym inp2
+          (lambda (inp3 sym)
+            (cond
+              ((equal? sym 'LESS)
+                (next-sym inp3
+                  (lambda (inp4 sym2)
+                    (if (equal? sym2 'EQ) 
+                      (<sum> inp4 
+                        (lambda (inp expr2) 
+                          (cont inp 
+                            (list 'LTEQ 
+                                  expr 
+                                  expr2)))) 
+                      (<sum> inp3 
+                        (lambda (inp expr2) 
+                          (cont inp 
+                            (list 'LT 
+                                  expr 
+                                  expr2))))))))
+              ((equal? sym 'GREAT)
+                (next-sym inp3
+                  (lambda (inp4 sym2)
+                    (if (equal? sym2 'EQ) 
+                      (<sum> inp4 
+                        (lambda (inp expr2) 
+                          (cont inp 
+                            (list 'GTEQ 
+                                  expr 
+                                  expr2)))) 
+                      (<sum> inp3 
+                        (lambda (inp expr2) 
+                          (cont inp 
+                            (list 'GT 
+                                  expr 
+                                  expr2))))))))
+              ((equal? sym 'NOT)
+                (next-sym inp3
+                  (lambda (inp4 sym2)
+                    (if (equal? sym2 'EQ)
+                      (<sum> inp4
+                        (lambda (inp expr2)
+                          (cont inp
+                            (list 'NOTEQ
+                                  expr
+                                  expr2)))) 
+                      (syntax-error)))))
+              (else
+                (<sum> inp cont)))))))))
 
 (define <sum>
   (lambda (inp cont)
-    (<mult> inp cont)))
+    (<mult> inp
+      (lambda (inp2 expr)
+        (next-sym inp2
+          (lambda (inp3 sym)
+            (cond
+              ((equal? sym 'PLUS)
+                (<sum> inp3
+                  (lambda (inp expr2)
+                    (cont inp
+                      (list 'ADD
+                      expr
+                      expr2)))))
+              ((equal? sym 'MINUS)
+                (<sum> inp3
+                  (lambda (inp expr2)
+                    (cont inp
+                      (list 'SUB
+                      expr
+                      expr2)))))
+              (else
+                (<mult> inp cont)))))))))
 
 (define <mult>
   (lambda (inp cont)
-    (<term> inp cont)))
+    (<term> inp
+      (lambda (inp2 expr)
+        (next-sym inp2
+          (lambda (inp3 sym)
+            (cond
+              ((equal? sym 'STAR)
+                (<mult> inp3
+                  (lambda (inp expr2)
+                    (cont inp
+                      (list 'MULT
+                      expr
+                      expr2)))))
+              ((equal? sym 'SLASH)
+                (<term> inp3
+                  (lambda (inp expr2)
+                    (cont inp
+                      (list 'DIV
+                      expr
+                      expr2)))))
+              ((equal? sym 'PERC)
+                (<mult> inp3
+                  (lambda (inp expr2)
+                    (cont inp
+                      (list 'MOD
+                      expr
+                      expr2)))))
+              (else
+                (<term> inp cont)))))))))
 
 (define <term>
   (lambda (inp cont)
@@ -270,6 +423,8 @@
                        (cont inp2 (list 'INT sym)))
                       (else
                        (<paren_expr> inp cont)))))))
+
+;;----------------------------------------------------------------------------------
 
 ;; La fonction execute prend en parametre l'ASA du programme a
 ;; interpreter et retourne une chaine de caracteres qui contient
@@ -336,6 +491,9 @@
        (cont env
              output
              (cadr ast))) ;; retourner la valeur de la constante
+
+      ((ASSIGN)
+        (...))
                     
       (else
        "internal error (unknown expression AST)\n"))))
@@ -347,5 +505,5 @@
 (define main
   (lambda ()
     (print (parse-and-execute (read-all (current-input-port) read-char)))))
-    
+
 ;;;----------------------------------------------------------------------------
