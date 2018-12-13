@@ -304,7 +304,7 @@
                             (<stat> inp4
                                     (lambda(inp stat2)
                                       (cont inp (list 'IF test stat1 stat2))))
-                            (cont inp3 (list 'IF test stat1)))))))))))
+                            (cont inp3 (list 'IF test stat1 (list 'EMPTY))))))))))))
 
 ;;
 ;;
@@ -494,6 +494,19 @@
       ((EMPTY)
         (cont env output))
 
+      ((IF)
+        (exec-expr  env output (cadr ast)
+                    (lambda (env output val)
+                      (if (> val 0)
+                          (exec-stat env output (caddr ast)
+                                      (lambda (env output)
+                                        (cont env output)))
+
+                          (exec-stat  env output (cadddr ast)
+                                      (lambda (env output)
+                                        (cont env output)))))))
+
+
       ((PRINT)
        (exec-expr env ;; evaluer l'expression du print
                   output
@@ -640,7 +653,7 @@
     (map (lambda(n)
             (if (equal? (car n) var)
               (cons var newVal)
-              n))
+              n         ))
           env)))
 
 ;;Fonction qui gere les les erreur d'execution
