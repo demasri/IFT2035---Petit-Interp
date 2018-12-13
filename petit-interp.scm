@@ -489,7 +489,7 @@
                    (lambda (env output)
                     (exec-stat env output (caddr ast)
                                           (lambda (env output)
-                                            cont env output)))))
+                                            (cont env output))))))
 
       ((EMPTY)
         (cont env output))
@@ -505,6 +505,24 @@
                           (exec-stat  env output (cadddr ast)
                                       (lambda (env output)
                                         (cont env output)))))))
+
+      ((WHILE)
+        (exec-expr  env output (cadr ast)
+                    (lambda (env output val)
+                      (if (zero? val)
+                        (cont env output)
+                        (exec-stat env output (caddr ast)
+                                  (lambda (env1 output1)
+                            (exec-stat env1 output1 ast cont)))))))
+
+      ((DO)
+        (exec-stat  env output (cadr ast)
+                    (lambda (env1 output1)
+                      (exec-expr  env1 output1 (caddr ast)
+                                (lambda (env output val)
+                                  (if (zero? val)
+                                  (cont env output)
+                                  (exec-stat env1 output1 ast cont)))))))
 
 
       ((PRINT)
