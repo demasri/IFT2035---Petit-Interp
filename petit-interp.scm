@@ -104,7 +104,7 @@
 
 (define blanc?
   (lambda (c)
-    (or (char=? c #\space) (char=? c #\newline) (char=? c #\tab))))
+    (or (char=? c #\space) (char=? c #\newline) (char=? c #\tab) (char=? c #\return))))
 
 ;; La fonction chiffre? teste si son unique parametre est un caractere
 ;; numerique.
@@ -567,6 +567,48 @@
                   (lambda(env output val1 val2)
                     (cont env output (remainder val1 val2)))))
 
+      ((EQEQ)
+        (arithmetic env output ast ;;Aller chercher les valeurs
+                  (lambda(env output val1 val2)
+                    (cont env output (if (equal? val1 val2)
+                                         1
+                                         0)))))
+
+      ((NOTEQ)
+        (arithmetic env output ast ;;Aller chercher les valeurs
+                  (lambda(env output val1 val2)
+                    (cont env output (if (not (equal? val1 val2))
+                                          1
+                                          0)))))
+
+      ((GT)
+        (arithmetic env output ast ;;Aller chercher les valeurs
+                  (lambda(env output val1 val2)
+                    (cont env output (if (> val1 val2)
+                                        1
+                                        0)))))
+
+      ((LT)
+        (arithmetic env output ast ;;Aller chercher les valeurs
+                  (lambda(env output val1 val2)
+                    (cont env output (if (< val1 val2)
+                                        1
+                                        0)))))
+
+      ((LTEQ)
+        (arithmetic env output ast ;;Aller chercher les valeurs
+                  (lambda(env output val1 val2)
+                    (cont env output (if (<= val1 val2)
+                                        1
+                                        0)))))
+
+      ((GTEQ)
+        (arithmetic env output ast ;;Aller chercher les valeurs
+                  (lambda(env output val1 val2)
+                    (cont env output (if (>= val1 val2)
+                                        1
+                                        0)))))
+
       (else
         (execution-error 4 (cadr ast))))))
 
@@ -598,7 +640,7 @@
     (map (lambda(n)
             (if (equal? (car n) var)
               (cons var newVal)
-              (cons (car n) (cdr n))))
+              n))
           env)))
 
 ;;Fonction qui gere les les erreur d'execution
@@ -615,6 +657,6 @@
 
 (define main
   (lambda ()
-    (print (parse (read-all (current-input-port) read-char) '()))))
+    (print (parse-and-execute (read-all (current-input-port) read-char)))))
 
 ;;;----------------------------------------------------------------------------
