@@ -89,9 +89,9 @@
   (lambda (champs)
     (case champs
       ((1)
-        "syntax error: symbole non reconnue\n")
+        "syntax error: unrecognizable token\n")
       ((2)
-        "syntax error: expected token not found, from function expected\n")
+        "syntax error: expected token not found\n")
       ((3)
         "syntax error: expected token not found\n")
       ((4)
@@ -235,6 +235,8 @@
                     (<while_stat> inp2 cont))
                   ((LBRAQ)
                     (<seq_stat> inp2 cont))
+                  ((SEMI)
+                    (cont inp2 (list 'EMPTY))) ;;Pour une expression vide
                   (else
                     (<expr_stat> inp cont)))))))
 
@@ -591,12 +593,16 @@
       ((DIV)
         (arithmetic env output ast ;;Aller chercher les valeurs
                   (lambda(env output val1 val2)
-                    (cont env output (quotient val1 val2)))))
+                    (if (zero? val2 )
+                      (execution-error 2)
+                      (cont env output (quotient val1 val2))))))
 
       ((MOD)
         (arithmetic env output ast ;;Aller chercher les valeurs
                   (lambda(env output val1 val2)
-                    (cont env output (remainder val1 val2)))))
+                    (if (zero? val2 )
+                      (execution-error 3)
+                      (cont env output (remainder val1 val2))))))
 
       ((EQEQ)
         (arithmetic env output ast ;;Aller chercher les valeurs
@@ -679,9 +685,13 @@
   (lambda (champs)
     (case champs
       ((1)
-        "execution error: using undefined variable\n")
+        "execution error: Using undefined variable\n")
+      ((2)
+        "execution error: Division by zero\n")
+      ((3)
+        "execution error: Remainder by zero\n")
       (else
-      "internal error (unknown statement AST)\n"))))
+        "internal error (unknown statement AST)\n"))))
 ;;;----------------------------------------------------------------------------
 
 ;;; *** NE MODIFIEZ PAS CETTE SECTION ***
