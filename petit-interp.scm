@@ -93,9 +93,9 @@
       ((2)
         "syntax error: expected token not found, from function expected\n")
       ((3)
-         "syntax error: expected token not found\n")
+        "syntax error: expected token not found\n")
       ((4)
-            "syntax error: expected token '=' not found\n")
+        "syntax error: expected token '=' not found\n")
       (else
       "Generic syntax error\n"))))
 
@@ -186,7 +186,7 @@
               (lambda (inp sym)
                 (if (equal? sym expected-sym)
                     (cont inp)
-                    (syntax-error 2 expected-sym))))))
+                    (syntax-error 2))))))
 
 ;; La fonction parse recoit deux parametres, une liste de caracteres
 ;; et une continuation.  La liste de caracteres sera analysee pour
@@ -303,7 +303,7 @@
                             (if (equal? sym1 'ELSE-SYM)
                             (<stat> inp4
                                     (lambda(inp stat2)
-                                      (cont inp (list 'IF test stat1 (list 'ELSE stat2)))))
+                                      (cont inp (list 'IF test stat1 stat2))))
                             (cont inp3 (list 'IF test stat1)))))))))))
 
 ;;
@@ -417,7 +417,6 @@
                                             (cont inp (list 'DIF mult1 mult2)))))
                             (else
                               (cont inp2 mult1)))))))))
-
 
 ;;
 ;;
@@ -616,6 +615,6 @@
 
 (define main
   (lambda ()
-    (print (parse-and-execute (read-all (current-input-port) read-char)))))
+    (print (parse (read-all (current-input-port) read-char) '()))))
 
 ;;;----------------------------------------------------------------------------
