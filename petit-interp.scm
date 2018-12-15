@@ -93,8 +93,6 @@
       ((2)
         "syntax error: expected token not found\n")
       ((3)
-        "syntax error: expected token not found\n")
-      ((4)
         "syntax error: expected token '=' not found\n")
       (else
       "Generic syntax error\n"))))
@@ -397,7 +395,7 @@
                                       (<sum> inp4
                                             (lambda(inp4 sum2)
                                               (cont inp4 (list 'EQEQ sum1 sum2))))
-                                      (syntax-error 4)))
+                                      (syntax-error 3)))
 
                                     (else
                                       (cont inp2 sum1)))))))))))
@@ -532,10 +530,12 @@
                   output
                   (cadr ast)
                   (lambda (env output val)
+                  (if (null? val)
+                    (execution-error 1 output)
                     (cont env ;; ajouter le resultat a la sortie, rajouter une detection si variable non-declarer
                           (string-append output
                                          (number->string val)
-                                         "\n")))))
+                                         "\n"))))))
 
       ((EXPR)
        (exec-expr env ;; evaluer l'expression
@@ -545,7 +545,7 @@
                     (cont env output)))) ;; continuer en ignorant le resultat
 
       (else
-        (execution-error 5  (car ast))))))
+        (execution-error 5  output)))))
 
 ;; La fonction exec-expr fait l'interpretation d'une expression du
 ;; programme.  Elle prend quatre parametres : une liste d'association
@@ -594,14 +594,14 @@
         (arithmetic env output ast ;;Aller chercher les valeurs
                   (lambda(env output val1 val2)
                     (if (zero? val2 )
-                      (execution-error 2)
+                      (execution-error 2 output)
                       (cont env output (quotient val1 val2))))))
 
       ((MOD)
         (arithmetic env output ast ;;Aller chercher les valeurs
                   (lambda(env output val1 val2)
                     (if (zero? val2 )
-                      (execution-error 3)
+                      (execution-error 3 output)
                       (cont env output (remainder val1 val2))))))
 
       ((EQEQ)
@@ -647,7 +647,7 @@
                                         0)))))
 
       (else
-        (execution-error 4 (cadr ast))))))
+        (execution-error 4 output)))))
 
 ;;La fonction Arithmetic permet d'aller chercher
 ;;les deux termes qui compose une action arithmetic (+, -, *, / et modulo)
@@ -658,7 +658,7 @@
                 (exec-expr  env output (caddr ast) ;;Aller chercher la deuxieme valeur
                             (lambda (env output val2)
                               (if (or (null? val1) (null? val2));;Detecter l'utilisation de variable non declarer
-                              (execution-error 1)
+                              (execution-error 1 output)
                               (cont env output val1 val2))))))))
 
 ;;Fonction qui retourne la valeur pour une variable
@@ -682,7 +682,8 @@
 
 ;;Fonction qui gere les les erreur d'execution
 (define execution-error
-  (lambda (champs)
+  (lambda (champs output)
+    (string-append output
     (case champs
       ((1)
         "execution error: Using undefined variable\n")
@@ -691,7 +692,7 @@
       ((3)
         "execution error: Remainder by zero\n")
       (else
-        "internal error (unknown statement AST)\n"))))
+        "internal error (unknown statement AST)\n")))))
 ;;;----------------------------------------------------------------------------
 
 ;;; *** NE MODIFIEZ PAS CETTE SECTION ***
