@@ -235,6 +235,8 @@
                     (<seq_stat> inp2 cont))
                   ((SEMI)
                     (cont inp2 (list 'EMPTY))) ;;Pour une expression vide
+                  ((RBRAQ)
+                    (cont inp (list 'EMPTY))) ;;Pour une expression vide
                   (else
                     (<expr_stat> inp cont)))))))
 
